@@ -1,0 +1,12 @@
+[package]
+name = "neural-net"
+version = "0.1.0"
+authors = ["Martin Thoresen <martinhath@gmail.com>"]
+
+[dependencies]
+zip = "0.1"
+regex = "0.1"
+lazy_static = "*"
+ieee754 = "*"
+itertools = "*"
+rayon = "*"
