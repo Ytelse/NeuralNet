@@ -15,8 +15,9 @@ macro_rules! print_var {
 mod npy;
 mod mnist;
 
-use std::path::Path;
 use rayon::prelude::*;
+use std::io;
+use std::path::Path;
 
 type Layer = Vec<Neuron>;
 #[derive(Debug)]
@@ -51,10 +52,8 @@ struct NeuralNetwork {
 }
 
 impl NeuralNetwork {
-    fn read_from_npz(path: &Path) -> Self {
-        let items = npy::read_npz_file(path)
-            .map_err(|e| println!("{}", e))
-            .unwrap_or(vec![]);
+    fn read_from_npz(path: &Path) -> Result<Self, io::Error> {
+        let items = try!(npy::read_npz_file(path));
 
         let layers: Vec<Layer> = items.chunks(6)
             .map(|chunk| {
@@ -91,13 +90,13 @@ impl NeuralNetwork {
             .collect();
         let neuron_count_in_layers: Vec<_> = layers.iter().map(|layer| layer.len()).collect();
 
-        NeuralNetwork {
+        Ok(NeuralNetwork {
             num_layers: layers.len(),
             input_count: layers[0][0].in_weights.len(),
             output_count: neuron_count_in_layers.last().cloned().unwrap_or(0),
             neuron_count_in_layers: neuron_count_in_layers,
             layers: layers,
-        }
+        })
     }
 
     fn process_input(&self, input: &Vec<f32>) -> Option<u8> {
@@ -144,10 +143,11 @@ fn vec_transpose_n<T>(vec: &Vec<T>, width: usize) -> Vec<T>
 }
 
 fn main() {
-    let image_path = Path::new("../train-images-idx3-ubyte");
-    let labels_path = Path::new("../train-labels-idx1-ubyte");
-    if let Ok(images) = mnist::read_image_label_pair(image_path, labels_path) {
-        let network = NeuralNetwork::read_from_npz(Path::new("../256.npz"));
+    let image_path = Path::new("../image_and_label_sets/train-images.idx3-ubyte");
+    let labels_path = Path::new("../image_and_label_sets/train-labels.idx1-ubyte");
+    let network_path = Path::new("../networks/256.npz");
+    if let (Ok(images), Ok(network)) = (mnist::read_image_label_pair(image_path, labels_path),
+                                        NeuralNetwork::read_from_npz(network_path)) {
         let n_images = 10000;
         let successes = images.iter()
             .take(n_images)
@@ -173,5 +173,7 @@ fn main() {
                  successes,
                  n_images,
                  100.0 * successes as f32 / n_images as f32);
+    } else {
+        println!("There is something wrong with your paths :)");
     }
 }
