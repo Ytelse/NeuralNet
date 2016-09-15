@@ -22,18 +22,18 @@ use std::path::Path;
 type Layer = Vec<Neuron>;
 #[derive(Debug)]
 struct Neuron {
-    in_weights: Vec<f32>,
-    bias: f32,
-    beta: f32,
-    gamma: f32,
-    mean: f32,
-    inv_stddev: f32,
+    in_weights: Vec<f64>,
+    bias: f64,
+    beta: f64,
+    gamma: f64,
+    mean: f64,
+    inv_stddev: f64,
 }
 
 impl Neuron {
-    fn process(&self, input_values: &[f32]) -> f32 {
+    fn process(&self, input_values: &[f64]) -> f64 {
         assert!(input_values.len() == self.in_weights.len());
-        let input: f32 = input_values.iter()
+        let input: f64 = input_values.iter()
             .zip(&self.in_weights)
             .map(|(x, w)| x * w)
             .sum();
@@ -75,7 +75,7 @@ impl NeuralNetwork {
                     .map(|(w, bi, be, ga, m, i)| {
                         let mut weights = Vec::with_capacity(w.len());
                         weights.extend(w);
-                        weights.iter_mut().map(|n: &mut f32| *n = n.signum()).last();
+                        weights.iter_mut().map(|n: &mut f64| *n = n.signum()).last();
                         Neuron {
                             in_weights: weights,
                             bias: *bi,
@@ -99,7 +99,7 @@ impl NeuralNetwork {
         })
     }
 
-    fn process_input(&self, input: &Vec<f32>) -> Option<u8> {
+    fn process_input(&self, input: &Vec<f64>) -> Option<u8> {
         if input.len() != self.input_count {
             panic!("input.len() != self.input_count: {} != {}",
                    input.len(),
@@ -145,14 +145,15 @@ fn vec_transpose_n<T>(vec: &Vec<T>, width: usize) -> Vec<T>
 fn main() {
     let image_path = Path::new("../image_and_label_sets/train-images.idx3-ubyte");
     let labels_path = Path::new("../image_and_label_sets/train-labels.idx1-ubyte");
-    let network_path = Path::new("../networks/256.npz");
+    let network_path_large = Path::new("../networks/1024-128.npz");
+    let network_path_small = Path::new("../networks/256.npz");
     if let (Ok(images), Ok(network)) = (mnist::read_image_label_pair(image_path, labels_path),
-                                        NeuralNetwork::read_from_npz(network_path)) {
-        let n_images = 10000;
+                                        NeuralNetwork::read_from_npz(network_path_large)) {
+        let n_images = 1000;
         let successes = images.iter()
             .take(n_images)
             .filter(|img| {
-                let pixels: Vec<f32> = img.float_data()
+                let pixels: Vec<f64> = img.float_data()
                     .into_iter()
                     .map(|n| if n > 127.0 {
                         1.
@@ -163,16 +164,16 @@ fn main() {
                 let num = network.process_input(&pixels);
 
                 let asd = num.map(|label| label == img.label);
-                if asd.is_none() || !asd.unwrap() {
-                    img.print();
-                }
+                // if asd.is_none() || !asd.unwrap() {
+                //     img.print();
+                // }
                 asd.unwrap_or(false)
             })
             .count();
         println!("Was right {}/{} times ({}%)",
                  successes,
                  n_images,
-                 100.0 * successes as f32 / n_images as f32);
+                 100.0 * successes as f64 / n_images as f64);
     } else {
         println!("There is something wrong with your paths :)");
     }

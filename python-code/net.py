@@ -128,7 +128,7 @@ def readImages(bytelist,header,correctValues):
         else:
             falseCount += 1
         
-        print("%d: correct: %d, guessed: %d"%(i,correctValues[i],imageVal))
+        # print("%d: correct: %d, guessed: %d"%(i,correctValues[i],imageVal))
 
     print("Correct:",correctCount,"False:",falseCount,"Guessed:",valueList)
     print("Guessed correct %.2f%%d of the time"%(correctCount * 100.0 / (correctCount + falseCount)))
