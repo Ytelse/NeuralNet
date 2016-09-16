@@ -17,14 +17,10 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn float_data(&self) -> Vec<f32> {
+    pub fn float_data(&self) -> Vec<f64> {
         self.data
             .iter()
-            .map(|&u| if u > 127 {
-                255.0
-            } else {
-                0.0
-            })
+            .map(|&u| u as f64)
             .collect()
     }
 

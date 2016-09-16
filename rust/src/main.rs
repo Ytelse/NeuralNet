@@ -28,17 +28,21 @@ struct Neuron {
     gamma: f64,
     mean: f64,
     inv_stddev: f64,
+    value_offset: f64,
 }
 
 impl Neuron {
     fn process(&self, input_values: &[f64]) -> f64 {
         assert!(input_values.len() == self.in_weights.len());
-        let input: f64 = input_values.iter()
+        let x: f64 = input_values.iter()
             .zip(&self.in_weights)
             .map(|(x, w)| x * w)
             .sum();
-        let batch_norm = self.gamma * (input - self.mean) * self.inv_stddev + self.beta;
-        batch_norm.signum()
+        // let batch_norm = self.gamma * self.inv_stddev * (input - self.mean) + self.beta;
+        // batch_norm.signum()
+        let a = self.gamma * self.inv_stddev;
+        let b = self.mean - self.beta / a;
+        ((x - b) * a.signum()).signum()
     }
 }
 
@@ -76,6 +80,8 @@ impl NeuralNetwork {
                         let mut weights = Vec::with_capacity(w.len());
                         weights.extend(w);
                         weights.iter_mut().map(|n: &mut f64| *n = n.signum()).last();
+                        let a = *ga * *i;
+                        let b = *be - a * *m;
                         Neuron {
                             in_weights: weights,
                             bias: *bi,
@@ -83,6 +89,7 @@ impl NeuralNetwork {
                             gamma: *ga,
                             mean: *m,
                             inv_stddev: *i,
+                            value_offset: (b) / a,
                         }
                     })
                     .collect()
@@ -114,9 +121,6 @@ impl NeuralNetwork {
                     .map(|n| n.process(&input_vector))
                     .collect_into(&mut v);
                 v
-                // layer.iter()
-                //     .map(|n| n.process(&input_vector))
-                //     .collect()
             })
             .iter()
             .position(|&n| n > 0.0)
@@ -149,7 +153,7 @@ fn main() {
     let network_path_small = Path::new("../networks/256.npz");
     if let (Ok(images), Ok(network)) = (mnist::read_image_label_pair(image_path, labels_path),
                                         NeuralNetwork::read_from_npz(network_path_large)) {
-        let n_images = 1000;
+        let n_images = 6000;
         let successes = images.iter()
             .take(n_images)
             .filter(|img| {
@@ -161,13 +165,9 @@ fn main() {
                         -1.
                     })
                     .collect();
-                let num = network.process_input(&pixels);
-
-                let asd = num.map(|label| label == img.label);
-                // if asd.is_none() || !asd.unwrap() {
-                //     img.print();
-                // }
-                asd.unwrap_or(false)
+                network.process_input(&pixels)
+                    .map(|label| label == img.label)
+                    .unwrap_or(false)
             })
             .count();
         println!("Was right {}/{} times ({}%)",

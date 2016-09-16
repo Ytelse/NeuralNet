@@ -64,10 +64,7 @@ fn parse_npy_file(bytes: &Vec<u8>) -> Result<Table, String> {
     let header = &bytes[10..10 + header_len as usize];
     let header_str = str::from_utf8(header).unwrap();
 
-    // TODO: Fix this:
-    // We'll take a shortcut, and simply search for "shape" in the header,
-    // in order to read out the array dimensions.
-    // We will assume "dtype" is f4, and "fortran_order" is false :)
+    // We will assume "fortran_order" is false :)
     lazy_static! {
         static ref RE: Regex = Regex::new(".*\'descr\': ?'<f(\\d).*\'shape\': ?\\((\\d*), *(\\d*)\\)").unwrap();
     }
