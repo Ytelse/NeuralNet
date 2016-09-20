@@ -28,7 +28,7 @@ struct Neuron {
     gamma: f64,
     mean: f64,
     inv_stddev: f64,
-    value_offset: f64,
+    f: f64,
 }
 
 impl Neuron {
@@ -42,9 +42,11 @@ impl Neuron {
         // batch_norm.signum()
         let a = self.gamma * self.inv_stddev;
         let b = self.mean - self.beta / a;
-        ((x - b) * a.signum()).signum()
+        ((x - b) * a.signum()).signum();
+        (x + self.f).signum()
     }
 }
+
 
 #[derive(Debug)]
 struct NeuralNetwork {
@@ -82,6 +84,14 @@ impl NeuralNetwork {
                         weights.iter_mut().map(|n: &mut f64| *n = n.signum()).last();
                         let a = *ga * *i;
                         let b = *be - a * *m;
+                        let mut f = (b / a).floor();
+                        if f > 127.0 {
+                            f = 127.0;
+                        }
+                        if f < -128.0 {
+                            f = -128.0
+                        }
+                        // println!("{}", f);
                         Neuron {
                             in_weights: weights,
                             bias: *bi,
@@ -89,7 +99,7 @@ impl NeuralNetwork {
                             gamma: *ga,
                             mean: *m,
                             inv_stddev: *i,
-                            value_offset: (b) / a,
+                            f: f,
                         }
                     })
                     .collect()
@@ -153,7 +163,7 @@ fn main() {
     let network_path_small = Path::new("../networks/256.npz");
     if let (Ok(images), Ok(network)) = (mnist::read_image_label_pair(image_path, labels_path),
                                         NeuralNetwork::read_from_npz(network_path_large)) {
-        let n_images = 6000;
+        let n_images = 60000;
         let successes = images.iter()
             .take(n_images)
             .filter(|img| {
