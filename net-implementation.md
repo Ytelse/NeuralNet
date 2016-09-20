@@ -47,3 +47,7 @@ By selecting the `MSB` and `NOT`ing it, we get `0` on negative numbers, and `1` 
 
 Somehow, the `Sum` block must handle the fact that `0` is actually `-1`. We _could_ add as usual, multiply by two, and subtract width,
 (1024 for the large net), but this may be too much logic, if we want to minimize the size of the net (which we do?)
+
+## About the constant
+
+By checking the 60000 `b/a` constants of the large neural net, we can see that they range from `-253` to `486`, so we would need about `10` bytes to represent every number. However, [this](https://github.com/Ytelse/NeuralNet/commit/911dacbe9f636a7b6a82c62bab016ef901f51f35) commit shows in the Rust implementation, clamping the constants to 8-bit signed numbers only decreases the hit rate of the net by 0.05% (from 97.33% to 97.28%). Therefore, I think we can assume that each parameter can safely be `ceil`ed to an int, and clamped to signed 8bit.
